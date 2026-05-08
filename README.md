@@ -1,5 +1,6 @@
 # 🍔 Warung Cepat — Drive Thru Chat
-<img width="488" height="947" alt="image" src="https://github.com/user-attachments/assets/7b1435bf-ab0b-4f66-a58b-3eeab378e9ed" />
+<img width="1214" height="759" alt="image" src="https://github.com/user-attachments/assets/e51a22e6-d3c6-4ca4-8c60-e8ab4ef5f780" />
+
 
 Simulasi drive-thru berbasis chat menggunakan **FastMCP + FastAPI + Claude AI**.
 
