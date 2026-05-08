@@ -2,7 +2,7 @@
 <img width="1214" height="759" alt="image" src="https://github.com/user-attachments/assets/e51a22e6-d3c6-4ca4-8c60-e8ab4ef5f780" />
 
 
-Simulasi drive-thru berbasis chat menggunakan **FastMCP + FastAPI + Claude AI**.
+Simulasi drive-thru berbasis chat menggunakan **FastMCP + FastAPI +  AI**.
 
 ## Arsitektur
 
