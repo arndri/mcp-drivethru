@@ -4,10 +4,9 @@ FastAPI HTTP bridge - exposes MCP tools + OpenAI GPT chat endpoint
 import json
 import os
 import sys
-from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file
@@ -173,7 +172,15 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
-    customer_name: Optional[str] = "Pelanggan"
+    customer_name: str
+
+    @field_validator("customer_name")
+    @classmethod
+    def validate_customer_name(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("customer_name is required")
+        return cleaned
 
 
 # ─────────────────────────────────────────────
@@ -267,7 +274,8 @@ async def chat(req: ChatRequest):
                             order_info = {
                                 "order_code": data["order_code"],
                                 "total_price": data["total_price"],
-                                "estimated_time": data.get("estimated_time")
+                                "estimated_time": data.get("estimated_time"),
+                                "items": data.get("items", [])
                             }
                     except:
                         pass

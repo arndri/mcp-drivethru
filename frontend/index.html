@@ -121,51 +121,6 @@ body {
   pointer-events: none;
 }
 
-/* Chalkboard menu sign */
-.chalkboard {
-  position: absolute;
-  top: 28px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 260px;
-  background: #2a4a2a;
-  border: 5px solid #6b4520;
-  border-radius: 3px;
-  padding: 8px 12px 10px;
-  box-shadow: 3px 3px 0 #3a2010, inset 0 0 20px rgba(0,0,0,0.3);
-  z-index: 5;
-}
-.chalk-title {
-  font-family: var(--pixel);
-  font-size: 7px;
-  color: #fff;
-  text-align: center;
-  margin-bottom: 6px;
-  text-decoration: underline;
-  letter-spacing: 2px;
-}
-.chalk-item {
-  font-family: var(--pixel);
-  font-size: 5.5px;
-  color: rgba(255,255,255,0.88);
-  margin-bottom: 4px;
-  line-height: 1.6;
-}
-.chalk-btn {
-  display: block;
-  margin: 6px auto 0;
-  background: #4a7a3a;
-  border: 2px solid #8ac060;
-  color: #fff;
-  font-family: var(--pixel);
-  font-size: 5px;
-  padding: 4px 10px;
-  cursor: pointer;
-  letter-spacing: 1px;
-  transition: background 0.1s;
-}
-.chalk-btn:hover { background: #5a9a4a; }
-
 /* ── PIXEL FOOD SHELVES (left) ── */
 .shelf-left {
   position: absolute;
@@ -1069,13 +1024,6 @@ button, input, textarea { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://w
     <div class="lamp-glow"></div>
   </div>
 
-  <!-- CHALKBOARD MENU SIGN -->
-  <div class="chalkboard" id="chalkboard">
-    <div class="chalk-title">✦ MENU ✦</div>
-    <div class="chalk-item" id="chalkItems">Burger Klasik — Rp 25.000<br>Ayam Goreng — Rp 22.000<br>Kentang Goreng — Rp 15.000<br>Cola / Es Teh — Rp 10.000</div>
-    <button class="chalk-btn" onclick="showMenuPanel()">[ LIHAT SEMUA ]</button>
-  </div>
-
   <!-- BACK SHELVES LEFT (pixel bread) -->
   <div class="shelf-left">
     <!-- shelf boards -->
@@ -1329,7 +1277,7 @@ button, input, textarea { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://w
   <div class="input-bar">
     <div class="inp-name-col">
       <div class="inp-label">[ NAMA KAK ]</div>
-      <input class="name-inp" id="nameInp" type="text" placeholder="Nama kamu..." maxlength="18">
+      <input class="name-inp" id="nameInp" type="text" placeholder="Nama kamu..." maxlength="18" required>
     </div>
     <div class="inp-msg-col">
       <div class="inp-label2" id="msgLabel">▶▶ KETIK PESANANMU</div>
@@ -1357,13 +1305,14 @@ let allMenu = [];
 let curCat = 'burger';
 let busy = false;
 let cart = [];
+let completedOrder = null;
 let typeTimer = null;
 
 const CAT_EMOJI = {burger:'🍔',ayam:'🍗',snack:'🍟',minuman:'🥤',paket:'📦'};
 const FOOD_EMOJIS = ['🍔','🍟','🥤','🍗','🧁'];
 
 function fmt(n){
-  return 'Rp '+n.toString().replace(/\B(?=(\d{3})+(?!\end))/g,'.');
+  return 'Rp '+Number(n).toLocaleString('id-ID');
 }
 function autoResize(el){
   el.style.height='auto';
@@ -1415,6 +1364,7 @@ function renderMenu(cat){
 
 /* ── CART ── */
 function addToCart(name,price,id){
+  completedOrder = null;
   const ex=cart.find(i=>i.name===name);
   if(ex){ex.qty++;ex.sub=ex.qty*price;}
   else{cart.push({id,name,price,qty:1,sub:price});}
@@ -1429,15 +1379,18 @@ function renderCart(){
   const el=document.getElementById('orderListWrap');
   const tv=document.getElementById('ofTotal');
   const rs=document.getElementById('regScreen');
-  if(!cart.length){
+  const visibleItems = cart.length ? cart : (completedOrder?.items || []);
+  const total = cart.length
+    ? cart.reduce((s,i)=>s+i.sub,0)
+    : (completedOrder?.total_price || 0);
+  if(!visibleItems.length){
     el.innerHTML='<div class="order-empty-msg">Belum ada<br>pesanan...</div>';
     tv.textContent='Rp 0'; rs.textContent='Rp 0'; return;
   }
-  const total=cart.reduce((s,i)=>s+i.sub,0);
-  el.innerHTML=cart.map(i=>`
+  el.innerHTML=visibleItems.map(i=>`
     <div class="order-entry">
       <div class="oe-name">${i.qty}× ${i.name}</div>
-      <div class="oe-price">${fmt(i.sub)}</div>
+      <div class="oe-price">${fmt(i.sub ?? i.subtotal)}</div>
     </div>`).join('');
   tv.textContent=fmt(total);
   rs.textContent=fmt(total).replace('Rp ','');
@@ -1477,7 +1430,10 @@ function showSpeech(text,orderInfo){
       document.getElementById('orderConfirm').classList.add('show');
       triggerFlash();
       updateCounterFood();
-      cart=[];renderCart();
+      completedOrder = orderInfo;
+      cart=[];
+      renderCart();
+      loadMenu();
     }, text.length*14+300);
   }
 }
@@ -1559,7 +1515,13 @@ async function sendMsg(){
   const text=inp.value.trim();
   if(!text||busy)return;
 
-  const name=document.getElementById('nameInp').value.trim()||'Pelanggan';
+  const nameInp=document.getElementById('nameInp');
+  const name=nameInp.value.trim();
+  if(!name){
+    nameInp.focus();
+    showSpeech('Isi nama dulu ya kak,\nbaru lanjut pesanannya.');
+    return;
+  }
   document.getElementById('msgLabel').textContent=`▶▶ ${name.toUpperCase()} BERKATA:`;
 
   messages.push({role:'user',content:text});
@@ -1590,12 +1552,6 @@ async function sendMsg(){
 
   busy=false;
   document.getElementById('sendBtn').disabled=false;
-}
-
-/* ── CHALKBOARD update ── */
-function showMenuPanel(){
-  document.getElementById('quickRow').classList.remove('gone');
-  quickSend('Tampilkan semua menu lengkap dong');
 }
 
 /* ── INIT ── */
